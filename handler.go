@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
+	// "regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -112,10 +112,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 		)
 	}
 
-	res := rec.Buffer().Bytes()
-	tr := h.makeTransformer(res, r)
+	tr := h.makeTransformer(r)
 	// TODO: could potentially use transform.Append here with a pooled byte slice as buffer?
-	result, _, err := transform.Bytes(tr, res)
+	result, _, err := transform.Bytes(tr, rec.Buffer().Bytes())
 	if err != nil {
 		return err
 	}
@@ -133,7 +132,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	return nil
 }
 
-func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Transformer {
+func (h *Handler) makeTransformer(req *http.Request) transform.Transformer {
 	reqReplacer := req.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
 
 	tr_desc := replace.String(
@@ -141,13 +140,13 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+h.DefaultDescription+"\">", ""),
 	)
 
-	pattern := "<img alt=\".*\" src=\"(.+\\.[jpg|png|webp])\">"
-	re := regexp.MustCompile(pattern)
-	matches := re.FindStringSubmatch(string(res))
+	// pattern := "<img alt=\".*\" src=\"(.+\\.[jpg|png|webp])\">"
+	// re := regexp.MustCompile(pattern)
+	// matches := re.FindStringSubmatch(string(res))
 	imgReplacement := h.DefaultImageURL
-	if matches[1] != "" {
-		imgReplacement = matches[1]
-	}
+	// if matches[1] != "" {
+	// 	imgReplacement = matches[1]
+	// }
 	tr_img := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\"\">", ""),
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\""+imgReplacement+"\">", ""),
