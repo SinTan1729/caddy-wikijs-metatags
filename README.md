@@ -40,7 +40,7 @@ suitable for your needs.
 Syntax:
 
 ```
-wikijs_meta_tags {
+wikijs_meta_tags [<matcher>] {
 	default_description <description>
 	default_image_path <path>
 }
@@ -60,4 +60,4 @@ this, you may send the `Accept-Encoding: identity` request header to the upstrea
       }
 
 ## Acknowledgement
-- Much of the code is borrowed from https://github.com/caddyserver/replace-response shamelessly.
+- Much of the code has shamelessly been borrowed from https://github.com/caddyserver/replace-response.
