@@ -26,7 +26,7 @@ var logger *zap.Logger
 
 func init() {
 	logger, _ = zap.NewDevelopment()
-	logger.Info("wikijs_meta_tags", zap.String("stage", "init"))
+	logger.Debug("wikijs_meta_tags", zap.String("stage", "init"))
 	caddy.RegisterModule(Handler{})
 	httpcaddyfile.RegisterHandlerDirective("wikijs_meta_tags", parseCaddyfile)
 	httpcaddyfile.RegisterDirectiveOrder("wikijs_meta_tags", httpcaddyfile.After, "encode")
@@ -48,7 +48,7 @@ func (Handler) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID: "http.handlers.wikijs_meta_tags",
 		New: func() caddy.Module {
-			logger.Info("wikijs_meta_tags", zap.String("stage", "New"))
+			logger.Debug("wikijs_meta_tags", zap.String("stage", "New"))
 			return new(Handler)
 		},
 	}
@@ -99,13 +99,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	}
 	if !rec.Buffered() {
 		// Skipped, no need to replace
-		logger.Info("wikijs_meta_tags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
+		logger.Debug("wikijs_meta_tags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
 		return nil
 	}
 
-	logger.Info("wikijs_meta_tags", zap.String("Default og:description", h.DefaultDescription))
-	logger.Info("wikijs_meta_tags", zap.String("Default og:image", h.DefaultImagePath))
-	logger.Info("wikijs_meta_tags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
+	logger.Debug("wikijs_meta_tags", zap.String("Default og:description", h.DefaultDescription))
+	logger.Debug("wikijs_meta_tags", zap.String("Default og:image", h.DefaultImagePath))
+	logger.Debug("wikijs_meta_tags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
 
 	res := rec.Buffer().Bytes()
 	tr := h.makeTransformer(res, r)
@@ -144,7 +144,7 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 		imgReplacement = matches[1]
 	}
 	imgReplacement = "https://" + req.Host + imgReplacement
-	logger.Info("wikijs_meta_tags", zap.String("Chosen og:image", imgReplacement))
+	logger.Debug("wikijs_meta_tags", zap.String("Chosen og:image", imgReplacement))
 	tr_img := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\">", ""),
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\""+imgReplacement+"\">", ""),
