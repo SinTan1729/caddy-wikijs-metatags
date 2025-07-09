@@ -5,7 +5,7 @@ This Caddy module automatically inserts `og:description` and `og:image` meta tag
 
 It only performs replacements if the tags are empty, and uses the default image if none can be found in page.
 
-Note: This handler cannot perform replacements on compressed content. If your response comes from a proxied backend that supports compression,
+**Note:** This handler cannot perform replacements on compressed content. If your response comes from a proxied backend that supports compression,
 you will either have to decompress it in a response handler chain before this handler runs, or disable from the backend. One easy way to ask the
 backend to _not_ compress the response is to set the `Accept-Encoding` header to `identity`, for example: `header_up Accept-Encoding identity`
 (in your Caddyfile, in the `reverse_proxy` block).
@@ -59,5 +59,5 @@ this, you may send the `Accept-Encoding: identity` request header to the upstrea
           header_up Accept-Encoding identity
       }
 
-## Notes
+## Acknowledgement
 - Much of the code is borrowed from https://github.com/caddyserver/replace-response shamelessly.
