@@ -14,7 +14,10 @@ import (
 	"sync"
 
 	"github.com/caddyserver/caddy/v2"
+	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
+	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
+
 	"github.com/icholy/replace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -23,6 +26,7 @@ import (
 
 func init() {
 	caddy.RegisterModule(Handler{})
+	httpcaddyfile.RegisterHandlerDirective("wikijs_meta_tags", parseCaddyfile)
 }
 
 // Handler is an example; put your own type here.
@@ -200,6 +204,76 @@ func (fw *replaceWriter) Close() error {
 	return nil
 }
 
+// UnmarshalCaddyfile implements caddyfile.Unmarshaler. Syntax:
+//
+//	default_description <desc>
+//	default_image_url <url>
+//
+// 'url' has to be a secure (https) link to jpg, png, webp, or gif image.
+func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+	d.Next() // consume directive name
+
+	h.DefaultDescription = ""
+	h.DefaultImageURL = ""
+
+	line := func(isBlock bool) error {
+		switch d.Val() {
+		case "default_description":
+			{
+				if !d.NextArg() {
+					return d.ArgErr()
+				}
+				h.DefaultDescription = d.Val()
+			}
+		case "default_image_url":
+			{
+				if !d.NextArg() {
+					return d.ArgErr()
+				}
+				h.DefaultImageURL = d.Val()
+			}
+		default:
+			if isBlock && d.Val() == "match" {
+				if h.Matcher != nil {
+					return d.Err("Match block already specified")
+				}
+				responseMatchers := make(map[string]caddyhttp.ResponseMatcher)
+				err := caddyhttp.ParseNamedResponseMatcher(d.NewFromNextSegment(), responseMatchers)
+				if err != nil {
+					return err
+				}
+				matcher := responseMatchers["match"]
+				h.Matcher = &matcher
+				return nil
+			}
+		}
+
+		return nil
+	}
+
+	for d.Next() {
+		if d.NextArg() {
+			if err := line(false); err != nil {
+				return err
+			}
+		}
+		for nesting := d.Nesting(); d.NextBlock(nesting); {
+			if err := line(true); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseCaddyfile unmarshals tokens from h into a new Middleware.
+func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
+	handler := new(Handler)
+	err := handler.UnmarshalCaddyfile(h.Dispenser)
+	return handler, err
+}
+
 var bufPool = sync.Pool{
 	New: func() any {
 		return new(bytes.Buffer)
@@ -210,6 +284,7 @@ var bufPool = sync.Pool{
 var (
 	_ caddy.Validator             = (*Handler)(nil)
 	_ caddyhttp.MiddlewareHandler = (*Handler)(nil)
+	_ caddyfile.Unmarshaler       = (*Handler)(nil)
 
 	_ http.ResponseWriter = (*replaceWriter)(nil)
 )
