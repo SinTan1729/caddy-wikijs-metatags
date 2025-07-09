@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	// "regexp"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,14 +22,11 @@ import (
 	"golang.org/x/text/transform"
 )
 
-var k, s string
 var logger *zap.Logger
 
 func init() {
-	k = "wikijs_meta_tags"
-	s = "stage"
 	logger, _ = zap.NewDevelopment()
-	logger.Info(k, zap.String(s, "init"))
+	logger.Info("wikijs_meta_tags", zap.String("stage", "init"))
 	caddy.RegisterModule(Handler{})
 	httpcaddyfile.RegisterHandlerDirective("wikijs_meta_tags", parseCaddyfile)
 	httpcaddyfile.RegisterDirectiveOrder("wikijs_meta_tags", httpcaddyfile.After, "encode")
@@ -38,9 +35,10 @@ func init() {
 // Handler is an example; put your own type here.
 type Handler struct {
 	// Default values when nothing can be figured out from the page
-	// The DefaultImageURL entry must be a direct link to an image
+	// The DefaultImageURL entry must be a valid publicly accessible path
+	// The hostname will be automatically added, so it should start with a slash (/)
 	DefaultDescription string `json:"default_description,omitempty"`
-	DefaultImageURL    string `json:"default_image_url,omitempty"`
+	DefaultImagePath   string `json:"default_image_path,omitempty"`
 	// Only run replacements on responses that match against this ResponseMmatcher.
 	Matcher *caddyhttp.ResponseMatcher `json:"match,omitempty"`
 }
@@ -50,7 +48,7 @@ func (Handler) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID: "http.handlers.wikijs_meta_tags",
 		New: func() caddy.Module {
-			logger.Info(k, zap.String(s, "New"))
+			logger.Info("wikijs_meta_tags", zap.String("stage", "New"))
 			return new(Handler)
 		},
 	}
@@ -60,16 +58,16 @@ func (Handler) CaddyModule() caddy.ModuleInfo {
 func (h *Handler) Validate() error {
 	// Make sure that the provided default image, if any,
 	// is valid for og:image meta tags
-	if h.DefaultImageURL != "" {
-		url := h.DefaultImageURL
-		startsHttps := strings.HasPrefix(url, "https://")
+	if h.DefaultImagePath != "" {
+		url := h.DefaultImagePath
+		startsSlash := strings.HasPrefix(url, "/")
 		endsJPG := strings.HasSuffix(url, ".jpg")
 		endsPNG := strings.HasSuffix(url, ".png")
 		endsGIF := strings.HasSuffix(url, ".gif")
 		endsWEBP := strings.HasSuffix(url, ".webp")
 
-		if !startsHttps || (!endsJPG && !endsPNG && !endsGIF && !endsWEBP) {
-			return fmt.Errorf("Default Image URL is invalid. Only secure (https) jpg, png, gif, and webp links work.")
+		if !startsSlash || (!endsJPG && !endsPNG && !endsGIF && !endsWEBP) {
+			return fmt.Errorf("Default Image Path is invalid. Only jpg, png, gif, and webp links work.")
 		}
 	}
 
@@ -101,17 +99,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	}
 	if !rec.Buffered() {
 		// Skipped, no need to replace
-		logger.Info(k, zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
+		logger.Info("wikijs_meta_tags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
 		return nil
 	}
 
-	logger.Info(k, zap.String("og:description", h.DefaultDescription))
-	logger.Info(k, zap.String("og:image", h.DefaultImageURL))
-	logger.Info(k, zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
+	logger.Info("wikijs_meta_tags", zap.String("Default og:description", h.DefaultDescription))
+	logger.Info("wikijs_meta_tags", zap.String("Default og:image", h.DefaultImagePath))
+	logger.Info("wikijs_meta_tags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
 
-	tr := h.makeTransformer(r)
+	res := rec.Buffer().Bytes()
+	tr := h.makeTransformer(res, r)
 	// TODO: could potentially use transform.Append here with a pooled byte slice as buffer?
-	result, _, err := transform.Bytes(tr, rec.Buffer().Bytes())
+	result, _, err := transform.Bytes(tr, res)
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	return nil
 }
 
-func (h *Handler) makeTransformer(req *http.Request) transform.Transformer {
+func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Transformer {
 	reqReplacer := req.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
 
 	tr_desc := replace.String(
@@ -137,15 +136,17 @@ func (h *Handler) makeTransformer(req *http.Request) transform.Transformer {
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+h.DefaultDescription+"\">", ""),
 	)
 
-	// pattern := "<img alt=\".*\" src=\"(.+\\.[jpg|png|webp])\">"
-	// re := regexp.MustCompile(pattern)
-	// matches := re.FindStringSubmatch(string(res))
-	imgReplacement := h.DefaultImageURL
-	// if matches[1] != "" {
-	// 	imgReplacement = matches[1]
-	// }
+	pattern := "<img alt=\".*\" src=\"(.+\\.(?:jpg|png|webp|gif))\">"
+	re := regexp.MustCompile(pattern)
+	matches := re.FindStringSubmatch(string(res))
+	imgReplacement := h.DefaultImagePath
+	if len(matches) > 1 {
+		imgReplacement = matches[1]
+	}
+	imgReplacement = "https://" + req.Host + imgReplacement
+	logger.Info("wikijs_meta_tags", zap.String("Chosen og:image", imgReplacement))
 	tr_img := replace.String(
-		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\"\">", ""),
+		reqReplacer.ReplaceKnown("<meta property=\"og:image\">", ""),
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\""+imgReplacement+"\">", ""),
 	)
 
@@ -157,12 +158,13 @@ func (h *Handler) makeTransformer(req *http.Request) transform.Transformer {
 // UnmarshalCaddyfile implements caddyfile.Unmarshaler. Syntax:
 //
 //	default_description <desc>
-//	default_image_url <url>
+//	default_image_path <path>
 //
-// 'url' has to be a secure (https) link to jpg, png, webp, or gif image.
+// 'path' has to be a path to jpg, png, webp, or gif image.
+// Hostname will be added before it automatically, so it should start with a slash (/)
 func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	h.DefaultDescription = ""
-	h.DefaultImageURL = ""
+	h.DefaultImagePath = ""
 
 	for d.Next() {
 		for d.NextBlock(0) {
@@ -177,12 +179,12 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 						return d.ArgErr()
 					}
 				}
-			case "default_image_url":
+			case "default_image_path":
 				{
 					if !d.NextArg() {
 						return d.ArgErr()
 					}
-					h.DefaultImageURL = d.Val()
+					h.DefaultImagePath = d.Val()
 					if d.NextArg() {
 						return d.ArgErr()
 					}
