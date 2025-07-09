@@ -12,6 +12,11 @@ backend to _not_ compress the response is to set the `Accept-Encoding` header to
 
 **Module name:** `http.handlers.wikijs_meta_tags`
 
+## Usage
+
+Since this is a very niche plugin, I haven't bothered submitting it to the Caddy plugin registry. You can, however, use it directly in your
+docker compose file by referring to the image `ghcr.io/sintan1729/caddy-wikijs-meta-tags:main`.
+
 
 ## JSON examples
 
