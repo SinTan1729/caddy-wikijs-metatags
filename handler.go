@@ -218,6 +218,7 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	h.DefaultImageURL = ""
 
 	line := func(isBlock bool) error {
+		d.NextArg()
 		switch d.Val() {
 		case "default_description":
 			{
@@ -246,6 +247,8 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 				matcher := responseMatchers["match"]
 				h.Matcher = &matcher
 				return nil
+			} else {
+				return d.ArgErr()
 			}
 		}
 
@@ -253,11 +256,6 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	}
 
 	for d.Next() {
-		if d.NextArg() {
-			if err := line(false); err != nil {
-				return err
-			}
-		}
 		for nesting := d.Nesting(); d.NextBlock(nesting); {
 			if err := line(true); err != nil {
 				return err
