@@ -27,6 +27,7 @@ import (
 func init() {
 	caddy.RegisterModule(Handler{})
 	httpcaddyfile.RegisterHandlerDirective("wikijs_meta_tags", parseCaddyfile)
+	httpcaddyfile.RegisterDirectiveOrder("wikijs_meta_tags", httpcaddyfile.After, "encode")
 }
 
 // Handler is an example; put your own type here.
