@@ -215,47 +215,31 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	h.DefaultDescription = ""
 	h.DefaultImageURL = ""
 
-	line := func() error {
-		switch d.Val() {
-		case "default_description":
-			{
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				h.DefaultDescription = d.Val()
-			}
-		case "default_image_url":
-			{
-				if !d.NextArg() {
-					return d.ArgErr()
-				}
-				h.DefaultImageURL = d.Val()
-			}
-		case "match":
-			{
-				if h.Matcher != nil {
-					return d.Err("Match block already specified")
-				}
-				responseMatchers := make(map[string]caddyhttp.ResponseMatcher)
-				err := caddyhttp.ParseNamedResponseMatcher(d.NewFromNextSegment(), responseMatchers)
-				if err != nil {
-					return err
-				}
-				matcher := responseMatchers["match"]
-				h.Matcher = &matcher
-				return nil
-			}
-		default:
-			return d.Err("Unknown argument" + d.Val())
-		}
-
-		return nil
-	}
-
 	for d.Next() {
 		for d.NextBlock(0) {
-			if err := line(); err != nil {
-				return err
+			switch d.Val() {
+			case "default_description":
+				{
+					if !d.NextArg() {
+						return d.ArgErr()
+					}
+					h.DefaultDescription = d.Val()
+					if d.NextArg() {
+						return d.ArgErr()
+					}
+				}
+			case "default_image_url":
+				{
+					if !d.NextArg() {
+						return d.ArgErr()
+					}
+					h.DefaultImageURL = d.Val()
+					if d.NextArg() {
+						return d.ArgErr()
+					}
+				}
+			default:
+				return d.Err("Unknown argument" + d.Val())
 			}
 		}
 	}
