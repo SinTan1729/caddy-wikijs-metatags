@@ -6,7 +6,6 @@ package metatags
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	// "regexp"
 	"strconv"
@@ -20,11 +19,17 @@ import (
 
 	"github.com/icholy/replace"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/text/transform"
 )
 
+var k, s string
+var logger *zap.Logger
+
 func init() {
+	k = "wikijs_meta_tags"
+	s = "stage"
+	logger, _ = zap.NewDevelopment()
+	logger.Info(k, zap.String(s, "init"))
 	caddy.RegisterModule(Handler{})
 	httpcaddyfile.RegisterHandlerDirective("wikijs_meta_tags", parseCaddyfile)
 	httpcaddyfile.RegisterDirectiveOrder("wikijs_meta_tags", httpcaddyfile.After, "encode")
@@ -38,15 +43,16 @@ type Handler struct {
 	DefaultImageURL    string `json:"default_image_url,omitempty"`
 	// Only run replacements on responses that match against this ResponseMmatcher.
 	Matcher *caddyhttp.ResponseMatcher `json:"match,omitempty"`
-
-	logger *zap.Logger
 }
 
 // Handler performs the necessary insertions
 func (Handler) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		ID:  "http.handlers.wikijs_meta_tags",
-		New: func() caddy.Module { return new(Handler) },
+		ID: "http.handlers.wikijs_meta_tags",
+		New: func() caddy.Module {
+			logger.Info(k, zap.String(s, "New"))
+			return new(Handler)
+		},
 	}
 }
 
@@ -88,29 +94,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	}
 	rec := caddyhttp.NewResponseRecorder(w, respBuf, shouldBuf)
 
-	// collect the response from upstream
+	// Collect the response from upstream
 	err := next.ServeHTTP(rec, r)
 	if err != nil {
 		return err
 	}
 	if !rec.Buffered() {
 		// Skipped, no need to replace
-		if c := h.logger.Check(zapcore.DebugLevel, "not buffering body; skipping replacement"); c != nil {
-			c.Write(
-				zap.Int("response_status", rec.Status()),
-				zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}),
-			)
-		}
+		logger.Info(k, zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
 		return nil
 	}
 
-	if c := h.logger.Check(zapcore.DebugLevel, "buffered body replacement"); c != nil {
-		c.Write(
-			zap.Any("og:description", h.DefaultDescription),
-			zap.Any("og:image", h.DefaultImageURL),
-			zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}),
-		)
-	}
+	logger.Info(k, zap.String("og:description", h.DefaultDescription))
+	logger.Info(k, zap.String("og:image", h.DefaultImageURL))
+	logger.Info(k, zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
 
 	tr := h.makeTransformer(r)
 	// TODO: could potentially use transform.Append here with a pooled byte slice as buffer?
@@ -155,53 +152,6 @@ func (h *Handler) makeTransformer(req *http.Request) transform.Transformer {
 	transforms := []transform.Transformer{tr_desc, tr_img}
 
 	return transform.Chain(transforms...)
-}
-
-// replaceWriter is used for streaming response body replacement. It
-// ensures the Content-Length header is removed and writes to tw,
-// which should be a transform writer that performs replacements.
-type replaceWriter struct {
-	*caddyhttp.ResponseWriterWrapper
-	wroteHeader bool
-	tw          io.WriteCloser
-	tr          transform.Transformer
-	handler     *Handler
-}
-
-func (fw *replaceWriter) WriteHeader(status int) {
-	if fw.wroteHeader {
-		return
-	}
-	fw.wroteHeader = true
-
-	if fw.handler.Matcher == nil || fw.handler.Matcher.Match(status, fw.ResponseWriterWrapper.Header()) {
-		// we don't know the length after replacements since
-		// we're not buffering it all to find out
-		fw.Header().Del("Content-Length")
-		fw.tw = transform.NewWriter(fw.ResponseWriterWrapper, fw.tr)
-	}
-
-	fw.ResponseWriterWrapper.WriteHeader(status)
-}
-
-func (fw *replaceWriter) Write(d []byte) (int, error) {
-	if !fw.wroteHeader {
-		fw.WriteHeader(http.StatusOK)
-	}
-
-	if fw.tw != nil {
-		return fw.tw.Write(d)
-	} else {
-		return fw.ResponseWriterWrapper.Write(d)
-	}
-}
-
-func (fw *replaceWriter) Close() error {
-	if fw.tw != nil {
-		// Close if we have a transform writer, the underlying one does not need to be closed.
-		return fw.tw.Close()
-	}
-	return nil
 }
 
 // UnmarshalCaddyfile implements caddyfile.Unmarshaler. Syntax:
@@ -264,6 +214,4 @@ var (
 	_ caddy.Validator             = (*Handler)(nil)
 	_ caddyhttp.MiddlewareHandler = (*Handler)(nil)
 	_ caddyfile.Unmarshaler       = (*Handler)(nil)
-
-	_ http.ResponseWriter = (*replaceWriter)(nil)
 )
