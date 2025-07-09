@@ -212,13 +212,10 @@ func (fw *replaceWriter) Close() error {
 //
 // 'url' has to be a secure (https) link to jpg, png, webp, or gif image.
 func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
-	d.Next() // consume directive name
-
 	h.DefaultDescription = ""
 	h.DefaultImageURL = ""
 
-	line := func(isBlock bool) error {
-		d.NextArg()
+	line := func() error {
 		switch d.Val() {
 		case "default_description":
 			{
@@ -234,8 +231,8 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 				}
 				h.DefaultImageURL = d.Val()
 			}
-		default:
-			if isBlock && d.Val() == "match" {
+		case "match":
+			{
 				if h.Matcher != nil {
 					return d.Err("Match block already specified")
 				}
@@ -247,17 +244,17 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 				matcher := responseMatchers["match"]
 				h.Matcher = &matcher
 				return nil
-			} else {
-				return d.ArgErr()
 			}
+		default:
+			return d.Err("Unknown argument" + d.Val())
 		}
 
 		return nil
 	}
 
 	for d.Next() {
-		for nesting := d.Nesting(); d.NextBlock(nesting); {
-			if err := line(true); err != nil {
+		for d.NextBlock(0) {
+			if err := line(); err != nil {
 				return err
 			}
 		}
