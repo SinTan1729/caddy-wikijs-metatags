@@ -22,11 +22,7 @@ import (
 	"golang.org/x/text/transform"
 )
 
-var logger *zap.Logger
-
 func init() {
-	logger, _ = zap.NewDevelopment()
-	logger.Debug("wikijs_meta_tags", zap.String("stage", "init"))
 	caddy.RegisterModule(Handler{})
 	httpcaddyfile.RegisterHandlerDirective("wikijs_meta_tags", parseCaddyfile)
 	httpcaddyfile.RegisterDirectiveOrder("wikijs_meta_tags", httpcaddyfile.After, "encode")
@@ -41,6 +37,8 @@ type Handler struct {
 	DefaultImagePath   string `json:"default_image_path,omitempty"`
 	// Only run replacements on responses that match against this ResponseMmatcher.
 	Matcher *caddyhttp.ResponseMatcher `json:"match,omitempty"`
+	// Get a logger from the context
+	Logger *zap.Logger
 }
 
 // Handler performs the necessary insertions
@@ -48,14 +46,14 @@ func (Handler) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID: "http.handlers.wikijs_meta_tags",
 		New: func() caddy.Module {
-			logger.Debug("wikijs_meta_tags", zap.String("stage", "New"))
 			return new(Handler)
 		},
 	}
 }
 
-// Provision implements caddy.Validator
-func (h *Handler) Validate() error {
+// Provision implements caddy.Provisioner
+func (h *Handler) Provision(ctx caddy.Context) error {
+	h.Logger = ctx.Logger()
 	// Make sure that the provided default image, if any,
 	// is valid for og:image meta tags
 	if h.DefaultImagePath != "" {
@@ -99,13 +97,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	}
 	if !rec.Buffered() {
 		// Skipped, no need to replace
-		logger.Debug("wikijs_meta_tags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
+		h.Logger.Debug("wikijs_meta_tags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
 		return nil
 	}
 
-	logger.Debug("wikijs_meta_tags", zap.String("Default og:description", h.DefaultDescription))
-	logger.Debug("wikijs_meta_tags", zap.String("Default og:image", h.DefaultImagePath))
-	logger.Debug("wikijs_meta_tags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
+	h.Logger.Debug("wikijs_meta_tags", zap.String("Default og:description", h.DefaultDescription))
+	h.Logger.Debug("wikijs_meta_tags", zap.String("Default og:image", h.DefaultImagePath))
+	h.Logger.Debug("wikijs_meta_tags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
 
 	res := rec.Buffer().Bytes()
 	tr := h.makeTransformer(res, r)
@@ -144,7 +142,7 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 		imgReplacement = matches[1]
 	}
 	imgReplacement = "https://" + req.Host + imgReplacement
-	logger.Debug("wikijs_meta_tags", zap.String("Chosen og:image", imgReplacement))
+	h.Logger.Debug("wikijs_meta_tags", zap.String("Chosen og:image", imgReplacement))
 	tr_img := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\">", ""),
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\""+imgReplacement+"\">", ""),
@@ -213,7 +211,7 @@ var bufPool = sync.Pool{
 
 // Interface guards
 var (
-	_ caddy.Validator             = (*Handler)(nil)
+	_ caddy.Provisioner           = (*Handler)(nil)
 	_ caddyhttp.MiddlewareHandler = (*Handler)(nil)
 	_ caddyfile.Unmarshaler       = (*Handler)(nil)
 )
