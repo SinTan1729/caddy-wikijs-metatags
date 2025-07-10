@@ -28,6 +28,7 @@ Substring substitution:
 	"handler": "wikijs_metatags",
 	"default_description": "Foo",
 	"default_image_path": "/Bar.jpg"
+	"insert_topic": false
 }
 ```
 
@@ -44,11 +45,13 @@ Syntax:
 wikijs_metatags [<matcher>] {
 	default_description <description>
 	default_image_path <path>
+	[insert_topic]
 }
 ```
 
 Here, description is a string. Default image path is relative to the host, which will be added automatically. It should be a .jpg, .png, .gif, or .webp
-image path.
+image path. If insert_topic is present, an attempt will be made to insert a topic after the description. It probably isn't worth it for anyone except
+myself. My wiki page links look like `https://<hostname>/en/<topic>/<pagename>`. Anything else would not work.
 
 
 ## Limitations
