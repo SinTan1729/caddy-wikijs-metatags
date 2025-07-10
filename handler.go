@@ -15,6 +15,8 @@ import (
 
 	"github.com/icholy/replace"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"golang.org/x/text/transform"
 )
 
@@ -75,9 +77,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Transformer {
 	reqReplacer := req.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
 
+	descReplacement := h.DefaultDescription
+	if h.InsertTopic {
+		pattern := "\\/([^\\/]+)\\/[^\\/]+$"
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(req.URL.Path)
+		if len(matches) > 1 {
+			descReplacement += " - " + cases.Title(language.English).String(matches[1])
+		}
+	}
+	h.Logger.Debug("wikijs_metatags", zap.String("Chosen og:description", descReplacement))
+
 	tr_desc := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\"\">", ""),
-		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+h.DefaultDescription+"\">", ""),
+		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+descReplacement+"\">", ""),
 	)
 
 	pattern := "<img .*src=\"(.+\\.(?:jpg|png|webp|gif))\".*>"

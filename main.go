@@ -25,12 +25,15 @@ type Handler struct {
 	// Default values when nothing can be figured out from the page
 	// The DefaultImageURL entry must be a valid publicly accessible path
 	// The hostname will be automatically added, so it should start with a slash (/)
+	// If InsertTopic is true (it is false by default), an attempt will
+	// be made to insert a topic after the description. It probably isn't worth it.
 	DefaultDescription string `json:"default_description,omitempty"`
 	DefaultImagePath   string `json:"default_image_path,omitempty"`
+	InsertTopic        bool   `json:"insert_topic"`
 	// Only run replacements on responses that match against this ResponseMmatcher.
 	Matcher *caddyhttp.ResponseMatcher `json:"match,omitempty"`
 	// Get a logger from the context
-	Logger *zap.Logger
+	Logger *zap.Logger `json:"logger,omitempty"`
 }
 
 // Handler performs the necessary insertions
