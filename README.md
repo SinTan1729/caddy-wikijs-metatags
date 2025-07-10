@@ -41,7 +41,7 @@ suitable for your needs.
 
 Syntax:
 
-```
+```caddyfile
 wikijs_metatags [<matcher>] {
 	default_description <description>
 	default_image_path <path>
@@ -59,9 +59,11 @@ myself. My wiki page links look like `https://<hostname>/<language>/<topic>/<pag
 - Compressed responses (e.g. from an upstream proxy which gzipped the response body) will not be decoded before attempting to replace. To work around
 this, you may send the `Accept-Encoding: identity` request header to the upstream to tell it not to compress the response. For example:
 
+```caddyfile
       reverse_proxy localhost:8080 {
           header_up Accept-Encoding identity
       }
+```
 
 ## Acknowledgement
 - Much of the code has shamelessly been borrowed from https://github.com/caddyserver/replace-response.
