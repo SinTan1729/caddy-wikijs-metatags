@@ -5,72 +5,18 @@ package metatags
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/caddyserver/caddy/v2"
-	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
-	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
 	"github.com/icholy/replace"
 	"go.uber.org/zap"
 	"golang.org/x/text/transform"
 )
-
-func init() {
-	caddy.RegisterModule(Handler{})
-	httpcaddyfile.RegisterHandlerDirective("wikijs_metatags", parseCaddyfile)
-	httpcaddyfile.RegisterDirectiveOrder("wikijs_metatags", httpcaddyfile.After, "encode")
-}
-
-// Handler is an example; put your own type here.
-type Handler struct {
-	// Default values when nothing can be figured out from the page
-	// The DefaultImageURL entry must be a valid publicly accessible path
-	// The hostname will be automatically added, so it should start with a slash (/)
-	DefaultDescription string `json:"default_description,omitempty"`
-	DefaultImagePath   string `json:"default_image_path,omitempty"`
-	// Only run replacements on responses that match against this ResponseMmatcher.
-	Matcher *caddyhttp.ResponseMatcher `json:"match,omitempty"`
-	// Get a logger from the context
-	Logger *zap.Logger
-}
-
-// Handler performs the necessary insertions
-func (Handler) CaddyModule() caddy.ModuleInfo {
-	return caddy.ModuleInfo{
-		ID: "http.handlers.wikijs_metatags",
-		New: func() caddy.Module {
-			return new(Handler)
-		},
-	}
-}
-
-// Provision implements caddy.Provisioner
-func (h *Handler) Provision(ctx caddy.Context) error {
-	h.Logger = ctx.Logger()
-	// Make sure that the provided default image, if any,
-	// is valid for og:image meta tags
-	if h.DefaultImagePath != "" {
-		url := h.DefaultImagePath
-		startsSlash := strings.HasPrefix(url, "/")
-		endsJPG := strings.HasSuffix(url, ".jpg")
-		endsPNG := strings.HasSuffix(url, ".png")
-		endsGIF := strings.HasSuffix(url, ".gif")
-		endsWEBP := strings.HasSuffix(url, ".webp")
-
-		if !startsSlash || (!endsJPG && !endsPNG && !endsGIF && !endsWEBP) {
-			return fmt.Errorf("Default Image Path is invalid. Only jpg, png, gif, and webp links work.")
-		}
-	}
-
-	return nil
-}
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
@@ -141,6 +87,7 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 	if len(matches) > 1 {
 		imgReplacement = matches[1]
 	}
+	// Only add host if need to
 	if strings.HasPrefix(imgReplacement, "/") {
 		imgReplacement = "https://" + req.Host + imgReplacement
 	}
@@ -154,66 +101,3 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 
 	return transform.Chain(transforms...)
 }
-
-// UnmarshalCaddyfile implements caddyfile.Unmarshaler. Syntax:
-//
-//	default_description <desc>
-//	default_image_path <path>
-//
-// 'path' has to be a path to jpg, png, webp, or gif image.
-// Hostname will be added before it automatically, so it should start with a slash (/)
-func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
-	h.DefaultDescription = ""
-	h.DefaultImagePath = ""
-
-	for d.Next() {
-		for d.NextBlock(0) {
-			switch d.Val() {
-			case "default_description":
-				{
-					if !d.NextArg() {
-						return d.ArgErr()
-					}
-					h.DefaultDescription = d.Val()
-					if d.NextArg() {
-						return d.ArgErr()
-					}
-				}
-			case "default_image_path":
-				{
-					if !d.NextArg() {
-						return d.ArgErr()
-					}
-					h.DefaultImagePath = d.Val()
-					if d.NextArg() {
-						return d.ArgErr()
-					}
-				}
-			default:
-				return d.Err("Unknown argument" + d.Val())
-			}
-		}
-	}
-
-	return nil
-}
-
-// parseCaddyfile unmarshals tokens from h into a new Middleware.
-func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
-	handler := new(Handler)
-	err := handler.UnmarshalCaddyfile(h.Dispenser)
-	return handler, err
-}
-
-var bufPool = sync.Pool{
-	New: func() any {
-		return new(bytes.Buffer)
-	},
-}
-
-// Interface guards
-var (
-	_ caddy.Provisioner           = (*Handler)(nil)
-	_ caddyhttp.MiddlewareHandler = (*Handler)(nil)
-	_ caddyfile.Unmarshaler       = (*Handler)(nil)
-)
