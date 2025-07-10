@@ -134,14 +134,16 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+h.DefaultDescription+"\">", ""),
 	)
 
-	pattern := "<img alt=\".*\" src=\"(.+\\.(?:jpg|png|webp|gif))\" .* >"
+	pattern := "<img .*src=\"(.+\\.(?:jpg|png|webp|gif))\".*>"
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(string(res))
 	imgReplacement := h.DefaultImagePath
 	if len(matches) > 1 {
 		imgReplacement = matches[1]
 	}
-	imgReplacement = "https://" + req.Host + imgReplacement
+	if strings.HasPrefix(imgReplacement, "/") {
+		imgReplacement = "https://" + req.Host + imgReplacement
+	}
 	h.Logger.Debug("wikijs_metatags", zap.String("Chosen og:image", imgReplacement))
 	tr_img := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\">", ""),
