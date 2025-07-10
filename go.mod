@@ -1,4 +1,4 @@
-module github.com/SinTan1729/caddy-wikijs-meta-tags
+module github.com/SinTan1729/caddy-wikijs-metatags
 
 go 1.24.5
 

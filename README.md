@@ -1,7 +1,7 @@
-Caddy `wikijs_meta_tags` handler module
+Caddy `wikijs_metatags` handler module
 =======================================
 
-This Caddy module automatically inserts `og:description` and `og:image` meta tags to WikiJS pages, hence the name `wikijs_meta_tags`.
+This Caddy module automatically inserts `og:description` and `og:image` meta tags to WikiJS pages, hence the name `wikijs_metatags`.
 
 It only performs replacements if the tags are empty, and uses the default image if none can be found in page. If there are images on the page,
 the first one is used in the `og:image` meta tag. For description, only default one is used.
@@ -11,12 +11,12 @@ you will either have to decompress it in a response handler chain before this ha
 backend to _not_ compress the response is to set the `Accept-Encoding` header to `identity`, for example: `header_up Accept-Encoding identity`
 (in your Caddyfile, in the `reverse_proxy` block).
 
-**Module name:** `http.handlers.wikijs_meta_tags`
+**Module name:** `http.handlers.wikijs_metatags`
 
 ## Usage
 
 Since this is a very niche plugin, I haven't bothered submitting it to the Caddy plugin registry. You can, however, use it directly in your
-docker compose file by referring to the image `ghcr.io/sintan1729/caddy-wikijs-meta-tags:latest` or `:0` for sticking to the current version.
+docker compose file by referring to the image `ghcr.io/sintan1729/caddy-wikijs-metatags:latest` or `:0` for sticking to the current version.
 
 
 ## JSON examples
@@ -25,7 +25,7 @@ Substring substitution:
 
 ```json
 {
-	"handler": "wikijs_meta_tags",
+	"handler": "wikijs_metatags",
 	"default_description": "Foo",
 	"default_image_path": "/Bar.jpg"
 }
@@ -34,14 +34,14 @@ Substring substitution:
 
 ## Caddyfile
 
-This module has Caddyfile support. It registers the `wikijs_meta_tags` directive, by default to be after the standard `encode` directive.
+This module has Caddyfile support. It registers the `wikijs_metatags` directive, by default to be after the standard `encode` directive.
 Make sure to change it with the [order](https://caddyserver.com/docs/caddyfile/directives#directive-order) global option in case that is not
 suitable for your needs.
 
 Syntax:
 
 ```
-wikijs_meta_tags [<matcher>] {
+wikijs_metatags [<matcher>] {
 	default_description <description>
 	default_image_path <path>
 }

@@ -24,8 +24,8 @@ import (
 
 func init() {
 	caddy.RegisterModule(Handler{})
-	httpcaddyfile.RegisterHandlerDirective("wikijs_meta_tags", parseCaddyfile)
-	httpcaddyfile.RegisterDirectiveOrder("wikijs_meta_tags", httpcaddyfile.After, "encode")
+	httpcaddyfile.RegisterHandlerDirective("wikijs_metatags", parseCaddyfile)
+	httpcaddyfile.RegisterDirectiveOrder("wikijs_metatags", httpcaddyfile.After, "encode")
 }
 
 // Handler is an example; put your own type here.
@@ -44,7 +44,7 @@ type Handler struct {
 // Handler performs the necessary insertions
 func (Handler) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		ID: "http.handlers.wikijs_meta_tags",
+		ID: "http.handlers.wikijs_metatags",
 		New: func() caddy.Module {
 			return new(Handler)
 		},
@@ -97,13 +97,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	}
 	if !rec.Buffered() {
 		// Skipped, no need to replace
-		h.Logger.Debug("wikijs_meta_tags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
+		h.Logger.Debug("wikijs_metatags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
 		return nil
 	}
 
-	h.Logger.Debug("wikijs_meta_tags", zap.String("Default og:description", h.DefaultDescription))
-	h.Logger.Debug("wikijs_meta_tags", zap.String("Default og:image", h.DefaultImagePath))
-	h.Logger.Debug("wikijs_meta_tags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
+	h.Logger.Debug("wikijs_metatags", zap.String("Default og:description", h.DefaultDescription))
+	h.Logger.Debug("wikijs_metatags", zap.String("Default og:image", h.DefaultImagePath))
+	h.Logger.Debug("wikijs_metatags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
 
 	res := rec.Buffer().Bytes()
 	tr := h.makeTransformer(res, r)
@@ -142,7 +142,7 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 		imgReplacement = matches[1]
 	}
 	imgReplacement = "https://" + req.Host + imgReplacement
-	h.Logger.Debug("wikijs_meta_tags", zap.String("Chosen og:image", imgReplacement))
+	h.Logger.Debug("wikijs_metatags", zap.String("Chosen og:image", imgReplacement))
 	tr_img := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\">", ""),
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\""+imgReplacement+"\">", ""),
