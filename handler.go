@@ -134,7 +134,7 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+h.DefaultDescription+"\">", ""),
 	)
 
-	pattern := "<img alt=\".*\" src=\"(.+\\.(?:jpg|png|webp|gif))\">"
+	pattern := "<img alt=\".*\" src=\"(.+\\.(?:jpg|png|webp|gif))\" .* >"
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(string(res))
 	imgReplacement := h.DefaultImagePath
