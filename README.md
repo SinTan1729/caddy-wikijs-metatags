@@ -51,7 +51,7 @@ wikijs_metatags [<matcher>] {
 
 Here, description is a string. Default image path is relative to the host, which will be added automatically. It should be a .jpg, .png, .gif, or .webp
 image path. If insert_topic is present, an attempt will be made to insert a topic after the description. It probably isn't worth it for anyone except
-myself. My wiki page links look like `https://<hostname>/en/<topic>/<pagename>`. Anything else would not work.
+myself. My wiki page links look like `https://<hostname>/<language>/<topic>/<pagename>`. Anything else would not work.
 
 
 ## Limitations
