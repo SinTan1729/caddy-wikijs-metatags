@@ -3,7 +3,8 @@ Caddy `wikijs_meta_tags` handler module
 
 This Caddy module automatically inserts `og:description` and `og:image` meta tags to WikiJS pages, hence the name `wikijs_meta_tags`.
 
-It only performs replacements if the tags are empty, and uses the default image if none can be found in page.
+It only performs replacements if the tags are empty, and uses the default image if none can be found in page. If there are images on the page,
+the first one is used in the `og:image` meta tag. For description, only default one is used.
 
 **Note:** This handler cannot perform replacements on compressed content. If your response comes from a proxied backend that supports compression,
 you will either have to decompress it in a response handler chain before this handler runs, or disable from the backend. One easy way to ask the
