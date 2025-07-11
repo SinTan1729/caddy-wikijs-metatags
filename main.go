@@ -54,12 +54,13 @@ func (h *Handler) Provision(ctx caddy.Context) error {
 	if h.DefaultImagePath != "" {
 		url := h.DefaultImagePath
 		startsSlash := strings.HasPrefix(url, "/")
+		startsHTTPS := strings.HasPrefix(url, "https://")
 		endsJPG := strings.HasSuffix(url, ".jpg")
 		endsPNG := strings.HasSuffix(url, ".png")
 		endsGIF := strings.HasSuffix(url, ".gif")
 		endsWEBP := strings.HasSuffix(url, ".webp")
 
-		if !startsSlash || (!endsJPG && !endsPNG && !endsGIF && !endsWEBP) {
+		if !(startsSlash || startsHTTPS) || !(endsJPG || endsPNG || endsGIF || endsWEBP) {
 			return fmt.Errorf("Default Image Path is invalid. Only jpg, png, gif, and webp links work.")
 		}
 	}
