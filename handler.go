@@ -39,13 +39,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 	}
 	if !rec.Buffered() {
 		// Skipped, no need to replace
-		h.Logger.Debug("wikijs_metatags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
+		h.logger.Debug("wikijs_metatags", zap.Int("Not buffering body. Skipping replacement.", rec.Status()))
 		return nil
 	}
 
-	h.Logger.Debug("wikijs_metatags", zap.String("Default og:description", h.DefaultDescription))
-	h.Logger.Debug("wikijs_metatags", zap.String("Default og:image", h.DefaultImagePath))
-	h.Logger.Debug("wikijs_metatags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
+	h.logger.Debug("wikijs_metatags", zap.String("Default og:description", h.DefaultDescription))
+	h.logger.Debug("wikijs_metatags", zap.String("Default og:image", h.DefaultImagePath))
+	h.logger.Debug("wikijs_metatags", zap.Object("request", caddyhttp.LoggableHTTPRequest{Request: r}))
 
 	res := rec.Buffer().Bytes()
 	tr := h.makeTransformer(res, r)
@@ -73,19 +73,19 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 
 	descReplacement := h.DefaultDescription
 	if h.InsertTopic {
-		topic_matches := h.TopicRegexCompiled.FindStringSubmatch(req.URL.Path)
+		topic_matches := h.topicRegexCompiled.FindStringSubmatch(req.URL.Path)
 		if len(topic_matches) > 1 {
 			descReplacement += " - " + cases.Title(language.English).String(topic_matches[1])
 		}
 	}
-	h.Logger.Debug("wikijs_metatags", zap.String("Chosen og:description", descReplacement))
+	h.logger.Debug("wikijs_metatags", zap.String("Chosen og:description", descReplacement))
 
 	tr_desc := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\"\">", ""),
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+descReplacement+"\">", ""),
 	)
 
-	img_matches := h.ImageRegexCompiled.FindStringSubmatch(string(res))
+	img_matches := h.imageRegexCompiled.FindStringSubmatch(string(res))
 	imgReplacement := h.DefaultImagePath
 	if len(img_matches) > 1 {
 		imgReplacement = img_matches[1]
@@ -94,7 +94,7 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 	if strings.HasPrefix(imgReplacement, "/") {
 		imgReplacement = "https://" + req.Host + imgReplacement
 	}
-	h.Logger.Debug("wikijs_metatags", zap.String("Chosen og:image", imgReplacement))
+	h.logger.Debug("wikijs_metatags", zap.String("Chosen og:image", imgReplacement))
 	tr_img := replace.String(
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\">", ""),
 		reqReplacer.ReplaceKnown("<meta property=\"og:image\" content=\""+imgReplacement+"\">", ""),
