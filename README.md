@@ -29,7 +29,7 @@ Substring substitution:
 	"default_description": "Foo",
 	"default_image_path": "/Bar.jpg",
 	"insert_topic": false,
-	"topic_regex": "https:\/\/.+\/([^\/]+)\/[^\/]+$"
+	"topic_regex": "\/([^\/]+)\/[^\/]+$"
 }
 ```
 
@@ -57,7 +57,8 @@ In both cases, it must link to a `.jpg`, `.png`, `.gif`, or `.webp` image.
 - If `insert_topic` is present, an attempt will be made to insert a topic after the description. 
 - If `insert_topic` is present, `topic_regex` will be used to extract the topic. It must match the URL being processed. The first capturing group
 will be used to get the topic. The above `json` example shows the regex that I use. My wiki page links look like
-`https://<hostname>/<language>/<topic>/<pagename>`, and the regex captures `<topic>` from it.
+`https://<hostname>/<language>/<topic>/<pagename>`, and the regex captures `<topic>` from it. Remember that the `https://` prefix is not
+part of the matched URL string.
 
 
 ## Limitation
