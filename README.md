@@ -54,9 +54,9 @@ image path. If insert_topic is present, an attempt will be made to insert a topi
 myself. My wiki page links look like `https://<hostname>/<language>/<topic>/<pagename>`. Anything else would not work.
 
 
-## Limitations
+## Limitation
 
-- Compressed responses (e.g. from an upstream proxy which gzipped the response body) will not be decoded before attempting to replace. To work around
+Compressed responses (e.g. from an upstream proxy which gzipped the response body) will not be decoded before attempting to replace. To work around
 this, you may send the `Accept-Encoding: identity` request header to the upstream to tell it not to compress the response. For example:
 
 ```caddyfile
@@ -66,4 +66,5 @@ this, you may send the `Accept-Encoding: identity` request header to the upstrea
 ```
 
 ## Acknowledgement
-- Much of the code has shamelessly been borrowed from https://github.com/caddyserver/replace-response.
+
+Much of the code has shamelessly been borrowed from https://github.com/caddyserver/replace-response.
