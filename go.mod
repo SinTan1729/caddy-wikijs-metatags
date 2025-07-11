@@ -5,6 +5,7 @@ go 1.24.5
 require (
 	github.com/caddyserver/caddy/v2 v2.10.0
 	github.com/icholy/replace v0.6.0
+	github.com/wasilibs/go-re2 v1.10.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/text v0.23.0
 )
@@ -92,7 +93,9 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/tailscale/tscert v0.0.0-20240608151842-d3f834017e53 // indirect
+	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/urfave/cli v1.22.14 // indirect
+	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
 	github.com/zeebo/blake3 v0.2.4 // indirect
 	go.etcd.io/bbolt v1.3.9 // indirect
 	go.step.sm/cli-utils v0.9.0 // indirect

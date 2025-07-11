@@ -59,6 +59,16 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 						return d.ArgErr()
 					}
 				}
+			case "topic_regex":
+				{
+					if !d.NextArg() {
+						return d.ArgErr()
+					}
+					h.TopicRegex = d.Val()
+					if d.NextArg() {
+						return d.ArgErr()
+					}
+				}
 			default:
 				return d.Err("Unknown argument" + d.Val())
 			}

@@ -27,8 +27,9 @@ Substring substitution:
 {
 	"handler": "wikijs_metatags",
 	"default_description": "Foo",
-	"default_image_path": "/Bar.jpg"
-	"insert_topic": false
+	"default_image_path": "/Bar.jpg",
+	"insert_topic": false,
+	"topic_regex": "https:\/\/.+\/([^\/]+)\/[^\/]+$"
 }
 ```
 
@@ -46,14 +47,17 @@ wikijs_metatags [<matcher>] {
 	default_description <description>
 	default_image_path <path>
 	[insert_topic]
+	[topic_regex <regex>]
 }
 ```
 
-- Here, description is a string. 
-- Default image path can relative to the host, in which case hostname will be added automatically. It can also be a complete URL.
-In both cases, it must link to a .jpg, .png, .gif, or .webp image.
-- If insert_topic is present, an attempt will be made to insert a topic after the description. It probably isn't worth it for anyone except
-myself. My wiki page links look like `https://<hostname>/<language>/<topic>/<pagename>`. Anything else would not work.
+- Here, `default_description` is a string, which will become the description if the page has none.
+- The `default_image_path` can relative to the host, in which case hostname will be added automatically. It can also be a complete URL.
+In both cases, it must link to a `.jpg`, `.png`, `.gif`, or `.webp` image.
+- If `insert_topic` is present, an attempt will be made to insert a topic after the description. 
+- If `insert_topic` is present, `topic_regex` will be used to extract the topic. It must match the URL being processed. The first capturing group
+will be used to get the topic. The above `json` example shows the regex that I use. My wiki page links look like
+`https://<hostname>/<language>/<topic>/<pagename>`, and the regex captures `<topic>` from it.
 
 
 ## Limitation

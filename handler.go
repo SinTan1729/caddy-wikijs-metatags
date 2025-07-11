@@ -6,7 +6,6 @@ package metatags
 import (
 	"bytes"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -29,12 +28,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 
 	// Set up the response recorder
 	shouldBuf := func(status int, headers http.Header) bool {
-		if h.Matcher != nil {
-			return h.Matcher.Match(status, headers)
-		} else {
-			// Always insert if no matcher is specified
-			return true
-		}
+		return true
 	}
 	rec := caddyhttp.NewResponseRecorder(w, respBuf, shouldBuf)
 
@@ -79,11 +73,9 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 
 	descReplacement := h.DefaultDescription
 	if h.InsertTopic {
-		pattern := "\\/([^\\/]+)\\/[^\\/]+$"
-		re := regexp.MustCompile(pattern)
-		matches := re.FindStringSubmatch(req.URL.Path)
-		if len(matches) > 1 {
-			descReplacement += " - " + cases.Title(language.English).String(matches[1])
+		topic_matches := h.TopicRegexCompiled.FindStringSubmatch(req.URL.Path)
+		if len(topic_matches) > 1 {
+			descReplacement += " - " + cases.Title(language.English).String(topic_matches[1])
 		}
 	}
 	h.Logger.Debug("wikijs_metatags", zap.String("Chosen og:description", descReplacement))
@@ -93,12 +85,10 @@ func (h *Handler) makeTransformer(res []byte, req *http.Request) transform.Trans
 		reqReplacer.ReplaceKnown("<meta property=\"og:description\" content=\""+descReplacement+"\">", ""),
 	)
 
-	pattern := "<img .*src=\"(.+\\.(?:jpg|png|webp|gif))\".*>"
-	re := regexp.MustCompile(pattern)
-	matches := re.FindStringSubmatch(string(res))
+	img_matches := h.ImageRegexCompiled.FindStringSubmatch(string(res))
 	imgReplacement := h.DefaultImagePath
-	if len(matches) > 1 {
-		imgReplacement = matches[1]
+	if len(img_matches) > 1 {
+		imgReplacement = img_matches[1]
 	}
 	// Only add host if need to
 	if strings.HasPrefix(imgReplacement, "/") {
