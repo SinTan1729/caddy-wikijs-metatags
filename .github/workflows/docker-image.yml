@@ -6,6 +6,8 @@ on:
     tags:
       - '*'
   workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * Tue"
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
