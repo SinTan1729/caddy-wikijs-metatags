@@ -7,7 +7,7 @@ on:
       - '*'
   workflow_dispatch:
   schedule:
-    - cron: "31 15 * * Tue"
+    - cron: "58 15 * * Tue"
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -24,13 +24,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get latest tag
-        id: latesttag
-        if: github.event_name == 'schedule'
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
       - name: Checkout latest tag
         if: github.event_name == 'schedule'
-        run: git reset --hard ${{ steps.latesttag.outputs.tag }}
+        run: |
+          LATESTTAG=$(git tag -l | tail -1)
+          [ -z "${LATESTTAG}" ] && exit 0
+          echo "Resetting to tag ${LATESTTAG}"
+          git reset --hard ${LATESTTAG}
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -51,7 +51,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{version}}
             type=schedule,pattern=weekly
-            type=raw,value=dev,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=dev,enable=${{ github.ref == format('refs/heads/{0}', 'main') && github.event_name != 'schedule' }}
 
       - name: Build and push Docker image
         id: push
