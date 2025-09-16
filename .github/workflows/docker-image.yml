@@ -26,14 +26,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Checkout latest tag
-        if: github.event_name == 'schedule'
-        run: |
-          LATESTTAG=$(git tag -l | tail -1)
-          [ -z "${LATESTTAG}" ] && exit 0
-          echo "Resetting to tag ${LATESTTAG}"
-          git reset --hard ${LATESTTAG}
-
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
