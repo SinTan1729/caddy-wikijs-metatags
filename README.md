@@ -1,5 +1,4 @@
-Caddy `wikijs_metatags` handler module
-=======================================
+# Caddy `wikijs_metatags` handler module
 
 This Caddy module automatically inserts `og:description` and `og:image` meta tags to WikiJS pages, hence the name `wikijs_metatags`.
 
@@ -17,8 +16,8 @@ backend to _not_ compress the response is to set the `Accept-Encoding` header to
 
 Since this is a very niche plugin, I haven't bothered submitting it to the Caddy plugin registry. You can, however, use it directly in your
 docker compose file by referring to the image `ghcr.io/sintan1729/caddy-wikijs-metatags:latest` or `:0` for sticking to the current version.
-You can also use the `:weekly` tag for the weekly builds that are built using the latest caddy release.
-
+The versioned releases are locked at the state when a version is released. The `latest` tag is built monthly, and whenever a new version of
+caddy is released.
 
 ## JSON examples
 
@@ -26,14 +25,13 @@ Substring substitution:
 
 ```json
 {
-	"handler": "wikijs_metatags",
-	"default_description": "Foo",
-	"default_image_path": "/Bar.jpg",
-	"insert_topic": false,
-	"topic_regex": "\/([^\/]+)\/[^\/]+$"
+  "handler": "wikijs_metatags",
+  "default_description": "Foo",
+  "default_image_path": "/Bar.jpg",
+  "insert_topic": false,
+  "topic_regex": "\/([^\/]+)\/[^\/]+$"
 }
 ```
-
 
 ## Caddyfile
 
@@ -54,13 +52,12 @@ wikijs_metatags [<matcher>] {
 
 - Here, `default_description` is a string, which will become the description if the page has none.
 - The `default_image_path` can relative to the host, in which case hostname will be added automatically. It can also be a complete URL.
-In both cases, it must link to a `.jpg`, `.png`, `.gif`, or `.webp` image.
-- If `insert_topic` is present, an attempt will be made to insert a topic after the description. 
+  In both cases, it must link to a `.jpg`, `.png`, `.gif`, or `.webp` image.
+- If `insert_topic` is present, an attempt will be made to insert a topic after the description.
 - If `insert_topic` is present, `topic_regex` will be used to extract the topic. It must match the URL being processed. The first capturing group
-will be used to get the topic. The above `json` example shows the regex that I use. My wiki page links look like
-`https://<hostname>/<language>/<topic>/<pagename>`, and the regex captures `<topic>` from it. Remember that the `https://` prefix is not
-part of the matched URL string.
-
+  will be used to get the topic. The above `json` example shows the regex that I use. My wiki page links look like
+  `https://<hostname>/<language>/<topic>/<pagename>`, and the regex captures `<topic>` from it. Remember that the `https://` prefix is not
+  part of the matched URL string.
 
 ## Limitation
 

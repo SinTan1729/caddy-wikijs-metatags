@@ -3,11 +3,13 @@ name: Create and publish a Docker image
 
 on:
   push:
+    branches:
+      - "main"
     tags:
-      - '*'
+      - "*"
   workflow_dispatch:
   schedule:
-    - cron: "58 15 * * Tue"
+    - cron: "58 15 4 * *"
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -43,15 +45,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         env:
-            DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{major}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{version}}
-            type=schedule,pattern=weekly
-            type=raw,value=dev,enable=${{ github.ref == format('refs/heads/{0}', 'main') && github.event_name != 'schedule' }}
+            type=raw,pattern=latest
 
       - name: Build and push Docker image
         id: push
@@ -62,10 +63,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-      
+
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
-      
