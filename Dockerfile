@@ -1,4 +1,4 @@
-FROM caddy:2.11.1-builder AS builder
+FROM caddy:2-builder AS builder
 ADD . ./
 RUN xcaddy build \
     --with github.com/SinTan1729/caddy-wikijs-metatags=.
