@@ -65,9 +65,9 @@ Compressed responses (e.g. from an upstream proxy which gzipped the response bod
 this, you may send the `Accept-Encoding: identity` request header to the upstream to tell it not to compress the response. For example:
 
 ```caddyfile
-      reverse_proxy localhost:8080 {
-          header_up Accept-Encoding identity
-      }
+reverse_proxy localhost:8080 {
+    header_up Accept-Encoding identity
+}
 ```
 
 ## Acknowledgement
