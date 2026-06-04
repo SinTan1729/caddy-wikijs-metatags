@@ -1,4 +1,4 @@
-FROM caddy:2.11.3-builder AS builder
+FROM caddy:2.11.4-builder AS builder
 # Don't change to caddy:2-builder to get automated updates
 ADD . ./
 RUN xcaddy build \
