@@ -3,7 +3,7 @@ module github.com/SinTan1729/caddy-wikijs-metatags
 go 1.25.8
 
 require (
-	github.com/caddyserver/caddy/v2 v2.11.3
+	github.com/caddyserver/caddy/v2 v2.11.4
 	github.com/icholy/replace v0.6.0
 	github.com/wasilibs/go-re2 v1.11.0
 	go.uber.org/zap v1.28.0
